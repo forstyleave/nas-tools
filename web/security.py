@@ -4,17 +4,16 @@ import hashlib
 import hmac
 import json
 import os
-import log
-from functools import wraps, partial
+from base64 import b64encode
+from functools import partial, wraps
 
+from jose import JWTError, jwt
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 from cryptography.fernet import Fernet
-from base64 import b64encode
-import jwt
-from flask import request
+from fastapi import Request
 
-from app.utils import TokenCache
+import log
 from config import Config
 
 
@@ -27,10 +26,11 @@ def require_auth(func=None, force=True):
         return partial(require_auth, force=force)
 
     @wraps(func)
-    def wrapper(*args, **kwargs):
-        if not force and \
-                not Config().get_config("security").get("check_apikey"):
+    def wrapper(request: Request, *args, **kwargs):
+        if not force and  not Config().get_config("security").get("check_apikey"):
+            kwargs['request'] = request
             return func(*args, **kwargs)
+        
         log.debug(f"【Security】{func.__name__} 认证检查")
         # 允许在请求头Authorization中添加apikey
         auth = request.headers.get("Authorization")
@@ -38,12 +38,14 @@ def require_auth(func=None, force=True):
             auth = str(auth).split()[-1]
             if auth == Config().get_config("security").get("api_key"):
                 return func(*args, **kwargs)
+            
         # 允许使用在api后面拼接 ?apikey=xxx 的方式进行验证
         # 从query中获取apikey
-        auth = request.args.get("apikey")
+        auth = request.query_params.get("apikey")
         if auth:
             if auth == Config().get_config("security").get("api_key"):
                 return func(*args, **kwargs)
+            
         log.warn(f"【Security】{func.__name__} 认证未通过，请检查API Key")
         return {
             "code": 401,
@@ -87,15 +89,10 @@ def __decode_auth_token(token: str, algorithms='HS256'):
         payload = jwt.decode(token,
                              key=key,
                              algorithms=algorithms)
-    except jwt.ExpiredSignatureError:
-        return False, jwt.decode(token,
-                                 key=key,
-                                 algorithms=algorithms,
-                                 options={'verify_exp': False})
-    except (jwt.DecodeError, jwt.InvalidTokenError, jwt.ImmatureSignatureError):
-        return False, {}
-    else:
+        
         return True, payload
+    except JWTError:
+        return False, {}
 
 
 def identify(auth_header: str):
@@ -108,40 +105,6 @@ def identify(auth_header: str):
         if payload:
             return flag, payload.get("username") or ""
     return flag, ""
-
-
-def login_required(func):
-    """
-    登录保护，验证用户是否登录
-    :param func:
-    :return:
-    """
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-
-        def auth_failed():
-            return {
-                "code": 403,
-                "success": False,
-                "message": "安全认证未通过，请检查Token"
-            }
-
-        token = request.headers.get("Authorization", default=None)
-        if not token:
-            return auth_failed()
-        latest_token = TokenCache.get(token)
-        if not latest_token:
-            return auth_failed()
-        flag, username = identify(latest_token)
-        if not username:
-            return auth_failed()
-        if not flag and username:
-            TokenCache.set(token, generate_access_token(username))
-        return func(*args, **kwargs)
-
-    return wrapper
-
 
 def encrypt_message(message, key):
     """

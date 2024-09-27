@@ -1,5 +1,6 @@
 import json
 import os
+import secrets
 import shutil
 import sys
 from threading import Lock
@@ -110,19 +111,24 @@ class Config(object):
     _config = {}
     _config_path = None
     _user = None
+    _secret_key = None
 
     def __init__(self):
         self.menu = None
         self.services = None
+        # 生成 secret_key
+        self._secret_key = secrets.token_hex(32)
+
         self._config_path = os.environ.get('NASTOOL_CONFIG')
         if not self._config_path:
-            print("【Config】NASTOOL_CONFIG 环境变量未设置，使用config文件夹下默认配置文件")
+            print("【Config】NASTOOL_CONFIG 环境变量未设置, 使用config文件夹下默认配置文件")
             separator = '\\' if os.name == "nt" else '/'
             this_path = sys.argv[0]
             dir_path = this_path[:this_path.rfind(separator)]
             self._config_path = os.path.join(dir_path, "config", "config.yaml")
         if not os.environ.get('TZ'):
             os.environ['TZ'] = 'Asia/Shanghai'
+
         self.init_config()
 
     def init_config(self):
@@ -160,12 +166,8 @@ class Config(object):
             return False
 
     @property
-    def current_user(self):
-        return self._user
-
-    @current_user.setter
-    def current_user(self, user):
-        self._user = user
+    def secret_key(self):
+        return self._secret_key
 
     def get_proxies(self):
         return self.get_config('app').get("proxies")

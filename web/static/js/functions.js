@@ -383,9 +383,22 @@ function check_system_online() {
 
 //注销
 function logout() {
-  ajax_post("logout", {}, function (ret) {
-    window.location.href = "/";
+  $.ajax({
+    type: "POST",
+    url: "/logout",
+    contentType: 'application/json',
+    dataType: "json",
+    success: function (data) {
+      window.location.href = "/";
+    },
+    error: function (xhr, textStatus, errorThrown) {
+      window.location.href = "/";
+    }
   });
+
+  // ajax_post("logout", {}, function (ret) {
+  //   window.location.href = "/";
+  // });
 }
 
 //重启

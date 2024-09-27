@@ -38,7 +38,7 @@
   </div>
 </div>
 {% if ServerSucess %}
-{% with curdomainleft = request.host.split(':')[0] %}
+{% with curdomainleft = request.client.host.split(':')[0] %}
 <div class="page-body">
   <div class="container-xl">
     <div class="d-grid gap-3 grid-normal-card">

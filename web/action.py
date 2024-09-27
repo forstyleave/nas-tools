@@ -14,7 +14,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 import cn2an
-from flask_login import logout_user, current_user
+from web.auth import current_user
 from werkzeug.security import generate_password_hash
 
 import log
@@ -46,6 +46,7 @@ from app.utils import StringUtils, EpisodeFormat, RequestUtils, PathUtils, \
 from app.utils.types import RmtMode, OsType, SearchType, SyncType, MediaType, MovieTypes, TvTypes, \
     EventType, SystemConfigKey, RssType
 from config import RMT_MEDIAEXT, RMT_SUBEXT, RMT_AUDIO_TRACK_EXT, Config
+from web.auth import UserManager
 from web.backend.search_torrents import search_medias_for_web, search_media_by_message
 from web.backend.user import User
 from web.backend.web_utils import WebUtils
@@ -1306,7 +1307,7 @@ class WebAction:
         """
         注销
         """
-        logout_user()
+        # logout_user()
         return {"code": 0}
 
     def __update_config(self, data):
@@ -3994,7 +3995,7 @@ class WebAction:
         """
         查询所有用户
         """
-        user_list = User().get_users()
+        user_list = UserManager().get_users()
         Users = []
         for user in user_list:
             pris = str(user.PRIS).split(",")

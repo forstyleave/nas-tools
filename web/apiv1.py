@@ -1,5 +1,4 @@
 from flask import Blueprint, request
-from flask_restx import Api, reqparse, Resource
 
 from app.brushtask import BrushTask
 from app.rsschecker import RssChecker
@@ -7,8 +6,8 @@ from app.sites import Sites
 from app.utils import TokenCache
 from config import Config
 from web.action import WebAction
-from web.backend.user import User
-from web.security import require_auth, login_required, generate_access_token
+from web.auth import UserManager
+from web.security import require_auth, generate_access_token
 
 apiv1_bp = Blueprint("apiv1",
                      __name__,
@@ -87,7 +86,7 @@ class UserLogin(Resource):
         password = args.get('password')
         if not username or not password:
             return {"code": 1, "success": False, "message": "用户名或密码错误"}
-        user_info = User().get_user(username)
+        user_info = UserManager().get_user(username)
         if not user_info:
             return {"code": 1, "success": False, "message": "用户名或密码错误"}
         # 校验密码
@@ -123,7 +122,7 @@ class UserInfo(ClientResource):
         """
         args = self.parser.parse_args()
         username = args.get('username')
-        user_info = User().get_user(username)
+        user_info = UserManager().get_user(username)
         if not user_info:
             return {"code": 1, "success": False, "message": "用户名不正确"}
         return {

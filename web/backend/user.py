@@ -1,26 +1,25 @@
-from flask_login import UserMixin
 from werkzeug.security import check_password_hash
+from pydantic import BaseModel
 
-from app.helper import DbHelper
 from config import Config
 
 
-class User(UserMixin):
+class User(BaseModel):
     """
     用户
     """
-    dbhelper = None
-    admin_users = []
+
+    id: str = ''
+    username: str = ''
+    password_hash: str = ''
+    pris: str = ''
+    search: int = 10
+    level: int = 0
+    admin: int = 0
 
     def __init__(self, user=None):
-        self.dbhelper = DbHelper()
-        self.admin_users = [{
-            "id": 0,
-            "name": Config().get_config('app').get('login_user'),
-            "password": Config().get_config('app').get('login_password')[6:],
-            "pris": "我的媒体库,资源搜索,探索,站点管理,订阅管理,下载管理,媒体整理,服务,系统设置"
-        }]
-        if user:
+        if user:           
+            super().__init__()
             self.id = user.get('id')
             self.username = user.get('name')
             self.password_hash = user.get('password')
@@ -29,49 +28,12 @@ class User(UserMixin):
             self.level = 99
             self.admin = 1 if '系统设置' in self.pris else 0
 
+
     # 验证密码
     def verify_password(self, password):
         if self.password_hash is None:
             return False
         return check_password_hash(self.password_hash, password)
-
-    # 获取用户ID
-    def get_id(self):
-        return self.id
-
-    # 根据用户ID获取用户实体，为 login_user 方法提供支持
-    def get(self, user_id):
-
-        if user_id is None:
-            return None
-        for user in self.admin_users:
-            if user.get('id') == user_id:
-                return User(user)
-        for user in self.dbhelper.get_users():
-            if not user:
-                continue
-            if user.ID == user_id:
-                return User({"id": user.ID, "name": user.NAME, "password": user.PASSWORD, "pris": user.PRIS})
-        return None
-
-    # 根据用户名获取用户对像
-    def get_user(self, user_name):
-        for user in self.admin_users:
-            if user.get("name") == user_name:
-                return User(user)
-        for user in self.dbhelper.get_users():
-            if user.NAME == user_name:
-                return User({"id": user.ID, "name": user.NAME, "password": user.PASSWORD, "pris": user.PRIS})
-        return None
-
-    # 查询用户列表
-    def get_users(self):
-
-        all_user = []
-        for user in self.dbhelper.get_users():
-            one = User({"id": user.ID, "name": user.NAME, "password": user.PASSWORD, "pris": user.PRIS})
-            all_user.append(one)
-        return all_user
 
     # 查询顶底菜单列表
     def get_topmenus(self):

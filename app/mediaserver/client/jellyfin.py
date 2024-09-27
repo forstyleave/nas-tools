@@ -49,7 +49,7 @@ class Jellyfin(_IMediaClient):
                     self._play_host = self._play_host + "/"
             self._apikey = self._client_config.get('api_key')
             if self._host and self._apikey:
-                self._user = self.get_user(Config().current_user)
+                self._user = self.get_user()
                 self._serverid = self.get_server_id()
 
     @classmethod

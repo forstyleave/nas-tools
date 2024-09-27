@@ -3,6 +3,10 @@ import signal
 import sys
 import warnings
 
+import multiprocessing
+import uvicorn
+from uvicorn import Config as uConfig
+
 warnings.filterwarnings('ignore')
 
 # 运行环境判断
@@ -70,14 +74,17 @@ def get_run_config(forcev4=False):
             _web_host = "0.0.0.0"
         elif app_conf.get("web_host"):
             _web_host = app_conf.get("web_host").replace('[', '').replace(']', '')
+            
         _web_port = int(app_conf.get('web_port')) if str(app_conf.get('web_port', '')).isdigit() else 3000
         _ssl_cert = app_conf.get('ssl_cert')
         _ssl_key = app_conf.get('ssl_key')
-        _ssl_key = app_conf.get('ssl_key')
+        _https_port = app_conf.get('https_port', '')
+        if _https_port and  str(_https_port).isdigit():
+            _https_port = int(_https_port)
         _debug = True if app_conf.get("debug") else False
 
     app_arg = dict(host=_web_host, port=_web_port, debug=_debug, threaded=True, use_reloader=False)
-    if _ssl_cert:
+    if _ssl_cert and _ssl_key and _https_port:
         app_arg['ssl_context'] = (_ssl_cert, _ssl_key)
     return app_arg
 
@@ -116,7 +123,6 @@ init_system()
 # 启动服务
 start_service()
 
-
 # 本地运行
 if __name__ == '__main__':
     # Windows启动托盘
@@ -139,5 +145,16 @@ if __name__ == '__main__':
     # 初始化chrome驱动
     ChromeHelper().init_driver()
 
-    # Flask启动
-    App.run(**get_run_config(is_windows_exe))
+    settings = get_run_config(is_windows_exe)
+    workers=multiprocessing.cpu_count()
+    # uvicorn服务
+    cfg = uConfig(App, 
+            host=settings.get('host'), 
+            port=settings.get('port'),
+            timeout_keep_alive=30,  # 延长 Keep-Alive 超时时间，处理长时间的 SSE 连接
+            http="h11",             # 使用 h11 HTTP 解析器以更好地支持 SSE
+            loop="asyncio",         # 使用 asyncio 事件循环
+            workers=workers)
+    
+    Server = uvicorn.Server(cfg)
+    Server.run()

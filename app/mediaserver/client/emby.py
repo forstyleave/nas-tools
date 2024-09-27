@@ -52,7 +52,7 @@ class Emby(_IMediaClient):
             self._apikey = self._client_config.get('api_key')
             if self._host and self._apikey:
                 self._folders = self.__get_emby_folders()
-                self._user = self.get_user(Config().current_user)
+                self._user = self.get_user()
                 self._serverid = self.get_server_id()
 
     @classmethod
