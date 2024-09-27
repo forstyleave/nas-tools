@@ -5,7 +5,6 @@ import shutil
 import sys
 from threading import Lock
 import ruamel.yaml
-import pickle
 
 # 种子名/文件名要素分隔字符
 SPLIT_CHARS = r"\.|\s+|\(|\)|\[|]|-|\+|【|】|/|;|&|\||#|_|「|」"

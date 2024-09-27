@@ -32,7 +32,7 @@ from app.brushtask import BrushTask
 from app.conf import ModuleConf, SystemConfig
 from app.downloader import Downloader
 from app.filter import Filter
-from app.helper import SecurityHelper, MetaHelper, ChromeHelper, ThreadHelper
+from app.helper import SecurityHelper, MetaHelper, ThreadHelper
 from app.indexer import Indexer
 from app.media.meta import MetaInfo
 from app.mediaserver import MediaServer
@@ -306,6 +306,14 @@ def movie_rss(request: Request):
     RssItems = WebAction().get_movie_rss_list().get("result")
     RuleGroups = {str(group["id"]): group["name"] for group in Filter().get_rule_groups()}
     DownloadSettings = Downloader().get_download_setting()
+    return render_template("rss/movie_rss.html",
+                           Count=len(RssItems),
+                           RuleGroups=RuleGroups,
+                           DownloadSettings=DownloadSettings,
+                           Items=RssItems,
+                           Type='MOV',
+                           TypeName='电影'
+                           )
 
     response = {
         "request": request,  
@@ -325,6 +333,14 @@ def tv_rss(request: Request):
     RssItems = WebAction().get_tv_rss_list().get("result")
     RuleGroups = {str(group["id"]): group["name"] for group in Filter().get_rule_groups()}
     DownloadSettings = Downloader().get_download_setting()
+    return render_template("rss/movie_rss.html",
+                           Count=len(RssItems),
+                           RuleGroups=RuleGroups,
+                           DownloadSettings=DownloadSettings,
+                           Items=RssItems,
+                           Type='TV',
+                           TypeName='电视剧'
+                           )
 
     response = {
         "request": request,  
@@ -461,9 +477,15 @@ def sites(request: Request):
     CfgSites = Sites().get_sites()
     RuleGroups = {str(group["id"]): group["name"] for group in Filter().get_rule_groups()}
     DownloadSettings = {did: attr["name"] for did, attr in Downloader().get_download_setting().items()}
-    ChromeOk = ChromeHelper().get_status()
     CookieCloudCfg = SystemConfig().get(SystemConfigKey.CookieCloud)
     CookieUserInfoCfg = SystemConfig().get(SystemConfigKey.CookieUserInfo)
+    return render_template("site/site.html",
+                           Sites=CfgSites,
+                           RuleGroups=RuleGroups,
+                           DownloadSettings=DownloadSettings,
+                           ChromeOk=True,
+                           CookieCloudCfg=CookieCloudCfg,
+                           CookieUserInfoCfg=CookieUserInfoCfg)
 
     response = {
         "request": request,  
@@ -867,8 +889,8 @@ def service(request: Request):
     if "subscribe_search_all" in Services:
         search_rss_interval = pt.get('search_rss_interval')
         if str(search_rss_interval).isdigit():
-            if int(search_rss_interval) < 1:
-                search_rss_interval = 1
+            if int(search_rss_interval) < 3:
+                search_rss_interval = 3
             tim_rsssearch = str(int(search_rss_interval)) + " 小时"
             rss_search_state = 'ON'
         else:
@@ -1565,7 +1587,7 @@ async def telegram(request: Request):
                             user_id=user_id)
                     return '只有管理员才有权限执行此命令'
             else:
-                if not str(user_id) in interactive_client.get("client").get_users():
+                if str(user_id) not in interactive_client.get("client").get_users():
                     Message().send_channel_msg(channel=SearchType.TG,
                             title="你不在用户白名单中，无法使用此机器人",
                             user_id=user_id)
